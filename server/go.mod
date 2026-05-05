@@ -1,4 +1,4 @@
-module medidew.name/medivpn-client
+module medidew.name/medivpn-server
 
 go 1.26.2
 

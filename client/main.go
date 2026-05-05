@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
+	"slices"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -13,18 +17,19 @@ medivpn - Personal vpn configuration tool, because I'm sick of typing out the lo
 
 Usage:
 
-	medivpn <on|off>
+	medivpn <command>
 
 Commands:
 
 	on		sets tailscale exit node according to config
 	off		unsets tailscale exit node
+	server	lists the possible exit node servers
 `
 
 var tailscale_binary_path string
 
 func main() {
-	if len(os.Args) != 2 {
+	if len(os.Args) < 2 {
 		fmt.Printf("%v\n", usage)
 		os.Exit(0)
 	}
@@ -32,7 +37,8 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		fmt.Printf("Error loading .env: %v\n", err)
 	}
-	exit_node_ip := os.Getenv("MEDIVPN_EXIT_NODE")
+	server_ip := os.Getenv("MEDIVPN_SERVER_ADDRESS")
+	server_port := os.Getenv("MEDIVPN_SERVER_PORT")
 	tailscale_binary_path = os.Getenv("TAILSCALE_BINARY_PATH")
 
 	command := os.Args[1]
@@ -40,9 +46,11 @@ func main() {
 	var err error
 	switch command {
 	case "on":
-		err = setExitNode(exit_node_ip)
+		err = setExitNode(server_ip)
 	case "off":
 		err = setExitNode("")
+	case "server":
+		err = serverHandler(server_ip + ":" + server_port)
 	default:
 		fmt.Printf("%v\n", usage)
 	}
@@ -60,5 +68,61 @@ func setExitNode(ipaddr string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+const server_usage string = `
+Usage:
+
+	medivpn server <server>
+
+Servers:
+
+`
+
+func serverHandler(address string) error {
+	connection, err := net.Dial("tcp4", address)
+	if err != nil {
+		return err
+	}
+	defer connection.Close()
+
+	connection.Write([]byte("server\n"))
+	scanner := bufio.NewScanner(connection)
+	scanner.Scan()
+	response := scanner.Text()
+	server_list := strings.Split(response, ",")
+
+	server_string := server_usage
+	for _, server := range server_list {
+		server_string += "    " + server + "\n"
+	}
+
+	if len(os.Args) != 3 {
+		fmt.Printf("%v\n", server_string)
+		return nil
+	}
+
+	server := os.Args[2]
+
+	if !slices.Contains(server_list, server) {
+		fmt.Printf("%v\n", server_string)
+		return nil
+	}
+
+	if err := changeServer(connection, server); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func changeServer(connection net.Conn, server string) error {
+	connection.Write([]byte("server " + server + "\n"))
+
+	//scanner := bufio.NewScanner(connection)
+	//scanner.Scan()
+	//response := scanner.Text()
+
 	return nil
 }
