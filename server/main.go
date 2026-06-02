@@ -19,7 +19,7 @@ var server_list []string
 func main() {
 	logger = log.Default()
 	if err := godotenv.Load(); err != nil {
-		err := godotenv.Load("/etc/medivpn/server.env")
+		err := godotenv.Load("/etc/medivpn/server.env") // TODO: replace env with .conf because convention
 
 		if err != nil {
 			logger.Fatalf("Error loading .env: %v\n", err)

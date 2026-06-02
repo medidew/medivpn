@@ -26,6 +26,8 @@ Commands:
 	server	lists the possible exit node servers
 `
 
+// TODO: would be neat if I could actually query the current vpn server/status through this CLI
+
 var tailscale_binary_path string
 
 func main() {
@@ -35,7 +37,7 @@ func main() {
 	}
 
 	if err := godotenv.Load(); err != nil {
-		err := godotenv.Load("/etc/medivpn/client.env")
+		err := godotenv.Load("/etc/medivpn/client.env") // TODO: replace env with .conf because convention
 
 		if err != nil {
 			fmt.Printf("Error loading .env: %v\n", err)
@@ -96,7 +98,7 @@ func serverHandler(address string) error {
 	scanner := bufio.NewScanner(connection)
 	scanner.Scan()
 	response := scanner.Text()
-	server_list := strings.Split(response, ",")
+	server_list := strings.Split(response, ",") // TODO: this check doesn't really need to exist when the server already handles it
 
 	server_string := server_usage
 	for _, server := range server_list {
