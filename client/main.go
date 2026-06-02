@@ -35,7 +35,12 @@ func main() {
 	}
 
 	if err := godotenv.Load(); err != nil {
-		fmt.Printf("Error loading .env: %v\n", err)
+		err := godotenv.Load("/etc/medivpn/client.env")
+
+		if err != nil {
+			fmt.Printf("Error loading .env: %v\n", err)
+			os.Exit(1)
+		}
 	}
 	server_ip := os.Getenv("MEDIVPN_SERVER_ADDRESS")
 	server_port := os.Getenv("MEDIVPN_SERVER_PORT")

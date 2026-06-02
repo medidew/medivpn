@@ -19,7 +19,11 @@ var server_list []string
 func main() {
 	logger = log.Default()
 	if err := godotenv.Load(); err != nil {
-		logger.Fatalf("Error loading .env: %v\n", err)
+		err := godotenv.Load("/etc/medivpn/server.env")
+
+		if err != nil {
+			logger.Fatalf("Error loading .env: %v\n", err)
+		}
 	}
 
 	address := os.Getenv("MEDIVPN_LISTENING_ADDRESS") // TODO: `tailscale ip` for dynamic assignment
