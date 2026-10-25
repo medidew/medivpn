@@ -1,9 +1,9 @@
 go build
 
 if [ -d "$HOME/.local/bin" ]; then
-    install ./medivpn-client "$HOME/.local/bin/"
+    install ./medivpn-client "$HOME/.local/bin/medivpn"
 else
-    sudo install ./medivpn-client "/usr/local/bin/"
+    sudo install ./medivpn-client "/usr/local/bin/medivpn"
 fi
 
 CFG_DIR="$HOME/.config/medivpn"
