@@ -2,14 +2,19 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
+	"os/signal"
 	"slices"
 	"strings"
+	"time"
 
-	"github.com/joho/godotenv"
+	"medidew.name/medivpn-client/internal/config"
+	"tailscale.com/client/local"
+	"tailscale.com/ipn"
+	"tailscale.com/tailcfg"
 )
 
 const usage string = `medivpn - Personal vpn configuration tool, because I'm sick of typing out the longer command.
@@ -22,42 +27,53 @@ Commands:
 
 	on		sets tailscale exit node according to config
 	off		unsets tailscale exit node
-	server	lists the possible exit node servers
+	server		lists the possible exit node servers
 	lan		controls the Tailscale exit node lan access property
 `
 
 // TODO: would be neat if I could actually query the current vpn server/status through this CLI
 
-var tailscale_binary_path string
+var tailscale_client *local.Client
+var cfg *config.Config
+var ctx context.Context
 
 func main() {
+	var err error
+	cfg, err = config.LoadConfig()
+	if err != nil {
+		fmt.Printf("Error loading config: %v", err)
+		os.Exit(1)
+	}
+
 	if len(os.Args) < 2 {
 		fmt.Printf("%v", usage)
 		os.Exit(0)
 	}
 
-	if err := godotenv.Load(); err != nil {
-		err := godotenv.Load("/etc/medivpn/client.env") // TODO: replace env with .conf because convention
+	var stop context.CancelFunc
+	ctx, stop = signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
-		if err != nil {
-			fmt.Printf("Error loading .env: %v\n", err)
-			os.Exit(1)
-		}
-	}
-	server_ip := os.Getenv("MEDIVPN_SERVER_ADDRESS")
-	server_port := os.Getenv("MEDIVPN_SERVER_PORT")
-	tailscale_binary_path = os.Getenv("TAILSCALE_BINARY_PATH")
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	tailscale_client = &local.Client{}
 
 	command := os.Args[1]
-
-	var err error
 	switch command {
 	case "on":
-		err = setExitNode(server_ip)
+		mp := &ipn.MaskedPrefs{
+			ExitNodeIDSet: true,
+			Prefs: ipn.Prefs{
+				ExitNodeID: tailcfg.StableNodeID(cfg.Server_id),
+			},
+		}
+		_, err = tailscale_client.EditPrefs(ctx, mp)
 	case "off":
-		err = setExitNode("")
+		err = tailscale_client.SetUseExitNode(ctx, false)
 	case "server":
-		err = serverHandler(server_ip + ":" + server_port)
+		err = serverHandler(cfg.Server_id + ":" + cfg.Server_port)
 	case "lan":
 		err = lanAccess()
 	default:
@@ -68,16 +84,6 @@ func main() {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
-}
-
-func setExitNode(ipaddr string) error {
-	exit_node_arg := fmt.Sprintf("--exit-node=%v", ipaddr)
-	cmd := exec.Command(tailscale_binary_path, "set", exit_node_arg)
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error setting exit node: %v", err)
-	}
-	return nil
 }
 
 const server_usage string = `Usage:
@@ -95,7 +101,9 @@ func serverHandler(address string) error {
 	}
 	defer connection.Close()
 
-	connection.Write([]byte("server\n"))
+	if _, err = connection.Write([]byte("server\n")); err != nil {
+		return fmt.Errorf("failed to write to server: %v", err)
+	}
 	scanner := bufio.NewScanner(connection)
 	scanner.Scan()
 	response := scanner.Text()
@@ -126,7 +134,9 @@ func serverHandler(address string) error {
 }
 
 func changeServer(connection net.Conn, server string) error {
-	connection.Write([]byte("server " + server + "\n"))
+	if _, err := connection.Write([]byte("server " + server + "\n")); err != nil {
+		return fmt.Errorf("failed to write to server: %v", err)
+	}
 
 	//scanner := bufio.NewScanner(connection)
 	//scanner.Scan()
@@ -151,16 +161,17 @@ func lanAccess() error {
 		return nil
 	}
 
-	arg := os.Args[2]
+	mp := &ipn.MaskedPrefs{}
 
+	arg := os.Args[2]
 	var err error
 	switch arg {
 	case "on":
-		cmd := exec.Command(tailscale_binary_path, "set", "--exit-node-allow-lan-access")
-		err = cmd.Run()
+		mp.ExitNodeAllowLANAccess = true
+		_, err = tailscale_client.EditPrefs(ctx, mp)
 	case "off":
-		cmd := exec.Command(tailscale_binary_path, "set", "--exit-node-allow-lan-access=false")
-		err = cmd.Run()
+		mp.ExitNodeAllowLANAccess = false
+		_, err = tailscale_client.EditPrefs(ctx, mp)
 	default:
 		fmt.Printf("%v", lan_usage)
 	}
