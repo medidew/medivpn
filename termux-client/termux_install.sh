@@ -9,13 +9,20 @@ else
 fi
 echo "\`- Done."
 
-CFG_DIR="$HOME/.config/medivpn"
+CFG_DIR="$HOME/.config"
 
 echo "Checking for existing config directory..."
 if [ ! -d "$CFG_DIR" ]; then
-    echo "No directory found. Creating and copying."
+    echo "~/.config not found. Creating..."
     mkdir $CFG_DIR
-    cp ./internal/config/config.yaml.example $CFG_DIR/config.yaml
+    mkdir $CFG_DIR/medivpn
+    echo "Copying config..."
+    cp ./internal/config/config.yaml.example $CFG_DIR/medivpn/config.yaml
+    echo "\`- Done."
+elif [ ! -d "$CFG_DIR/medivpn" ]; then
+    echo "No directory found. Creating and copying..."
+    mkdir $CFG_DIR/medivpn
+    cp ./internal/config/config.yaml.example $CFG_DIR/medivpn/config.yaml
     echo "\`- Done."
 else
     echo "Usual config directory already found. Skipping config setup."
