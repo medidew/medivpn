@@ -2,7 +2,7 @@
 
 medivpn is my personal VPN configuration tool. It's designed to simplify the act of switching VPN servers and toggling my VPN on/off for my particular setup, without having to ssh into relevant machines and intermittently deal with Tailscale's CLI.
 
-As for the networking setup that necessitates this: I have a dedicated server running 24/7 offering an exit node that routes all non-local traffic through wireguard to commercial VPN servers. All any of my devices have to do to 'opt in' is select that dedicated server's exit node through Tailscale.
+As for the networking setup that necessitates this: I have a dedicated server running 24/7 offering an exit node that routes all non-local traffic through WireGuard to commercial VPN servers. All any of my devices have to do to 'opt in' is select that dedicated server's exit node through Tailscale.
 
 ## Why...?
 
@@ -15,7 +15,3 @@ Since the commercial VPN servers I'm using rate limit me anyway, and are therefo
 ## Project Structure
 
 No. This repo isn't big enough for that ._.
-
-## Limitations
-
-The CLI is exclusively for my desktop and laptop at the moment. To switch servers on my laptop I'd have to ssh into an existing machine via Termux, which kind of defeats the purpose of making this CLI in the first place. I could 
