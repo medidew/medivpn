@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/netip"
 	"os"
 	"os/signal"
 	"slices"
@@ -14,7 +15,6 @@ import (
 	"medidew.name/medivpn-client/internal/config"
 	"tailscale.com/client/local"
 	"tailscale.com/ipn"
-	"tailscale.com/tailcfg"
 )
 
 const usage string = `medivpn - Personal vpn configuration tool, because I'm sick of typing out the longer command.
@@ -58,22 +58,28 @@ func main() {
 	ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
+	netip, err := netip.ParseAddr(cfg.Server_ip)
+	if err != nil {
+		fmt.Printf("Error parsing server ip: %v", err)
+		os.Exit(1)
+	}
+
 	tailscale_client = &local.Client{}
 
 	command := os.Args[1]
 	switch command {
 	case "on":
 		mp := &ipn.MaskedPrefs{
-			ExitNodeIDSet: true,
 			Prefs: ipn.Prefs{
-				ExitNodeID: tailcfg.StableNodeID(cfg.Server_id),
+				ExitNodeIP: netip,
 			},
+			ExitNodeIPSet: true,
 		}
 		_, err = tailscale_client.EditPrefs(ctx, mp)
 	case "off":
 		err = tailscale_client.SetUseExitNode(ctx, false)
 	case "server":
-		err = serverHandler(cfg.Server_id + ":" + cfg.Server_port)
+		err = serverHandler(cfg.Server_ip + ":" + cfg.Server_port)
 	case "lan":
 		err = lanAccess()
 	default:

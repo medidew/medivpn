@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	Server_id   string `yaml:"medivpn_server_id"`
+	Server_ip   string `yaml:"medivpn_server_ip"`
 	Server_port string `yaml:"medivpn_server_port"`
 }
 
