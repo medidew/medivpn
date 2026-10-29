@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"medidew.name/medivpn-client/internal/config"
+	"medidew.name/medivpn/internal/config"
 	"tailscale.com/client/local"
 	"tailscale.com/ipn"
 )

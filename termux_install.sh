@@ -1,4 +1,4 @@
-go build
+go build -o ./bin/medivpn-termux ./cmd/termux_client/main.go
 
 echo "Installing medivpn client binary..."
 if [ -d "$HOME/../usr/bin" ]; then

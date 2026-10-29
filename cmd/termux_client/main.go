@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"medidew.name/medivpn-client/internal/config"
+	"medidew.name/medivpn/internal/config"
 	"tailscale.com/client/local"
 )
 
@@ -58,7 +58,7 @@ func main() {
 	command := os.Args[1]
 	switch command {
 	case "server":
-		err = serverHandler(cfg.Server_id + ":" + cfg.Server_port)
+		err = serverHandler(cfg.Server_ip + ":" + cfg.Server_port)
 	default:
 		fmt.Printf("%v", usage)
 	}

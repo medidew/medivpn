@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -18,7 +19,7 @@ func LoadConfig() (*Config, error) {
 	if len(home_dir) == 0 {
 		return nil, fmt.Errorf("HOME environment variable is empty")
 	}
-	config_path := home_dir + "/.config/medivpn/config.yaml"
+	config_path := filepath.Join(home_dir, ".config", "medivpn", "config.yaml")
 
 	config_file, err := os.Open(config_path)
 	if err != nil {

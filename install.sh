@@ -1,4 +1,4 @@
-go build
+go build -o ./bin/medivpn-client /cmd/client/main.go
 
 echo "Installing medivpn client binary..."
 if [ -d "$HOME/.local/bin" ]; then
